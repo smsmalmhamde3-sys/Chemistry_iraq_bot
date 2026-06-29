@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, CallbackQueryHandler, ContextTypes, filters
 
 BOT_TOKEN = os.getenv("8976857022:AAETcfdp17e4n__Bo59HZvx6TEnyMu66k0c")
-ADMIN_ID = 826754351 int(os.getenv("ADMIN_ID"))
+ADMIN_ID =  int(os.getenv("826754351"))
 
 users = {}
 
