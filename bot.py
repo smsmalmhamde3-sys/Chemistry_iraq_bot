@@ -12,8 +12,8 @@ from telegram.ext import (
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 ADMIN_ID = int(os.getenv("ADMIN_ID")) if os.getenv("ADMIN_ID") else 0
 
-# تخزين أسماء الطلاب
 users = {}
+waiting_question = {}
 
 # ================= START =================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -30,17 +30,33 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "👨‍🏫 مرحباً بك\n"
         "معك الأستاذ حسان 👋\n"
         "📘 مادة الكيمياء\n\n"
-        "اكتب اسمك + التايم (مثال: أحمد - ماسيه 1)\n\n"
-        "ثم اختر الخدمة من الأزرار:",
+        "🧑‍🎓 قبل البدء اختر التايم واكتب اسمك:\n\n"
+        "ماسيه 1\nماسيه 2\nماسيه 3\nتايم 4\nتايم 5 (معهد)\n\n"
+        "مثال: أحمد - ماسيه 1\n\n"
+        "ثم اختر من الأزرار:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 # ================= تسجيل الاسم =================
 async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
-    users[user_id] = update.message.text
+    text = update.message.text
 
-    await update.message.reply_text("✅ تم تسجيل بياناتك بنجاح")
+    users[user_id] = text
+
+    # سؤال الأستاذ
+    if waiting_question.get(user_id):
+        waiting_question[user_id] = False
+
+        await context.bot.send_message(
+            ADMIN_ID,
+            f"❓ سؤال جديد\n\n👤 الطالب: {text}\n🆔 ID: {user_id}"
+        )
+
+        await update.message.reply_text("✅ تم إرسال سؤالك للأستاذ")
+        return
+
+    await update.message.reply_text("✅ تم تسجيل بياناتك")
 
 # ================= الأزرار =================
 async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -68,25 +84,22 @@ async def callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
 
-    # الفصول
     elif query.data.startswith("f"):
         await query.edit_message_text("📂 لا توجد واجبات لهذا الفصل حالياً")
 
-    # 📊 الدرجة
+    # 📊 درجة
     elif query.data == "grade":
         if ADMIN_ID:
             await context.bot.send_message(
                 ADMIN_ID,
-                f"📌 طلب درجة جديد\n"
-                f"👤 الطالب: {name}\n"
-                f"🆔 ID: {user_id}"
+                f"📌 طلب درجة\n\n👤 الطالب: {name}\n🆔 ID: {user_id}"
             )
+        await query.edit_message_text("📊 تم إرسال طلب الدرجة للأستاذ")
 
-        await query.edit_message_text("📊 تم إرسال طلبك للأستاذ")
-
-    # ❓ سؤال
+    # ❓ سؤال الأستاذ
     elif query.data == "ask":
-        await query.edit_message_text("✍️ اكتب سؤالك وسيتم إرساله للأستاذ")
+        waiting_question[user_id] = True
+        await query.edit_message_text("✍️ اكتب سؤالك الآن وسيتم إرساله للأستاذ")
 
     # 📢 تنبيهات
     elif query.data == "notify":
